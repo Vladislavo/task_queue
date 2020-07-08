@@ -12,7 +12,7 @@ typedef struct task_queue task_queue_t;
 typedef void (*task_func_t)(void *arg);
 
 
-task_queue_t * task_queue_create(const int max_threads);
+task_queue_t * task_queue_create(const int max_threads, const int max_size);
 
 void task_queue_destroy(task_queue_t *tq);
 

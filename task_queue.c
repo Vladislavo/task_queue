@@ -20,6 +20,7 @@ struct task_queue {
 };
 
 static int max_active_tasks;
+static int max_queue_size;
 
 static queue_job_t * queue_job_create(task_func_t func, void *arg);
 static void queue_job_destroy(queue_job_t *qj);
@@ -27,8 +28,7 @@ static queue_job_t * queue_job_get_next(task_queue_t *tq);
 static void * queue_job_exec(void *arg_tq);
 
 
-
-task_queue_t * task_queue_create(const int max_threads) {
+task_queue_t * task_queue_create(const int max_threads, const int max_size) {
 	task_queue_t *tq = (task_queue_t *)malloc(sizeof(task_queue_t));
 
 	if (!tq) {
@@ -43,6 +43,7 @@ task_queue_t * task_queue_create(const int max_threads) {
 	pthread_mutex_init(&(tq->mutex), NULL);
 	
 	max_active_tasks = max_threads > 0 ? max_threads : 1;
+	max_queue_size = max_size > 0 ? max_size : max_active_tasks << 1;
 
 	return tq;
 }
@@ -76,6 +77,14 @@ int task_queue_enqueue(task_queue_t *tq, task_func_t task, void *arg) {
 
 	if (!tq || !task) {
 		return -1;
+	}
+	
+	pthread_mutex_lock(&(tq->mutex));
+	i = tq->size;
+	pthread_mutex_unlock(&(tq->mutex));
+
+	if (i+1 > max_queue_size) {
+		return -2;
 	}
 	
 	qj = queue_job_create(task, arg);
